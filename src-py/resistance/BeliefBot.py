@@ -1,6 +1,8 @@
 from agent import Agent
 import random
 
+from test import mission_fail_chance
+
 class BeliefBot(Agent):        
     '''A sample implementation of a random agent in the game The Resistance'''
 
@@ -60,7 +62,18 @@ class BeliefBot(Agent):
         proposer is an int between 0 and number_of_players and is the index of the player who proposed the mission.
         The function should return True if the vote is for the mission, and False if the vote is against the mission.
         '''
-        return True
+
+        if len(mission) == self.n_res and not self.id in mission:
+            return False
+
+        if self.spy:
+            n_spies = 0
+            for i in self.spies:
+                if i in mission:
+                    n_spies += 1
+            if n_spies < self.n_fails[self.M]:
+                return False 
+
         if tuple(sorted(mission)) in self.bad_teams:
             return False
 
@@ -68,15 +81,13 @@ class BeliefBot(Agent):
             if set(mission).issuperset(set(bt)):
                 return False
 
-        if len(mission) == self.n_res and not self.id in mission:
-            return False 
-        
-        if self.player_sus[proposer] >= 0.5:
-            return False
-
         spy_count = [i for i in mission if self.player_sus[i] >= 0.5]
         if len(spy_count) >= self.n_fails[self.M]:
             return False
+
+        if self.player_sus[proposer] >= 0.5:
+            return False
+
         
         return True
 
@@ -91,6 +102,7 @@ class BeliefBot(Agent):
         '''
         #nothing to do here
         pass
+        
 
     def betray(self, mission, proposer):
         '''
