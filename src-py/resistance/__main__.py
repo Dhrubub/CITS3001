@@ -61,7 +61,7 @@ agents10 = [BeliefBot(name='s1'),
         ]
 
 all_agents = [agents5, agents6, agents7, agents8, agents9, agents10]
-for agents in all_agents[-1:]:
+for agents in all_agents:
         b = 100
         c = 0
         for j in range(b):

@@ -39,8 +39,8 @@ class BeliefBot(Agent):
 
         self.update_fail_rate()
 
-        self.good_team = set()
-        self.bad_team = set()
+        self.good_teams = set()
+        self.bad_teams = set()
 
 
     def propose_mission(self, team_size, betrayals_required = 1):
@@ -49,8 +49,7 @@ class BeliefBot(Agent):
         to be returned. 
         betrayals_required are the number of betrayals required for the mission to fail.
         '''   
-
-        spies_guess = sorted(range(len(self.player_sus)), key=lambda k: self.player_sus[k])
+        spies_guess = self.get_spies_guess()
         return spies_guess[:team_size]
   
 
@@ -104,6 +103,26 @@ class BeliefBot(Agent):
 
             pAB = (pBA * pA) / pB
             self.player_sus[mission[i]] = pAB
+
+        good_teams_copy = self.good_teams.copy()
+        if mission_success:
+            if not tuple(sorted(mission)) in self.bad_teams:
+                is_super = False
+                for bt in self.bad_teams:
+                    if set(mission).issuperset(set(bt)):
+                        is_super = True
+                if not is_super:
+                    self.good_teams.add(tuple(sorted(mission)))
+        else:
+            for gt in good_teams_copy:
+                if set(gt).issuperset(set(mission)) or set(gt) == set(mission):
+                    self.good_teams.remove(gt)
+
+            self.bad_teams.add(tuple(sorted(mission)))
+
+
+
+
                  
 
     def round_outcome(self, rounds_complete, missions_failed):
@@ -129,6 +148,9 @@ class BeliefBot(Agent):
         #nothing to do here
         pass
 
+    def get_spies_guess(self):
+        return sorted(range(len(self.player_sus)), key=lambda k: self.player_sus[k])
+
     def get_permutations(self, mission_size, betrayals):
         permutations = []
         for p in range(2**mission_size):
@@ -143,7 +165,7 @@ class BeliefBot(Agent):
         '''
         update the spy fail rate variables
         '''
-        mode = 0
+        mode = 2
 
         if self.M < 4:
             if mode == 0:
