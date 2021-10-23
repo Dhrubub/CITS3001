@@ -51,9 +51,30 @@ class BeliefBot(Agent):
         betrayals_required are the number of betrayals required for the mission to fail.
 
         selects the players with the least probability of being a spy
-        '''   
+        ''' 
+        team = []
+        spy_count = 0
+        if self.n_res == team_size:
+            team.append(self.id)
+            spy_count += 1
+
         spies_guess = self.get_spy_chance_order()
-        return spies_guess[:team_size]
+        if self.spy:
+            counter = 0
+            while spy_count < self.n_fails[self.M]:
+                if not spies_guess[counter] in team and spies_guess[counter] in self.spies:
+                    team.append(spies_guess[counter])
+                    spy_count += 1
+                counter += 1
+
+        for i in spies_guess:
+            if not i in team:
+                team.append(i)
+            if len(team) == team_size:
+                break
+
+
+        return team
   
 
     def vote(self, mission, proposer):
@@ -80,11 +101,10 @@ class BeliefBot(Agent):
         if self.is_team_bad(mission):
             return False
 
-        spy_count = [i for i in mission if self.player_sus[i] >= 0.5]
-        if len(spy_count) >= self.n_fails[self.M]:
+        if self.can_mission_fail(mission):
             return False
 
-        if self.player_sus[proposer] >= 0.5:
+        if self.player_sus[proposer] >= 0.7:
             return False
 
         return True
@@ -98,7 +118,6 @@ class BeliefBot(Agent):
         votes is a dictionary mapping player indexes to Booleans (True if they voted for the mission, False otherwise).
         No return value is required or expected.
         '''
-        #nothing to do here
         if self.is_team_bad(mission):
             for i in votes:
                 if self.player_sus[i] < 0.9:
@@ -111,6 +130,13 @@ class BeliefBot(Agent):
                 if i not in votes:
                     if self.player_sus[i] < 0.9:
                         self.player_sus[i] += 0.05
+
+
+        if self.can_mission_fail(mission):
+            for i in votes:
+                if self.player_sus[i] < 0.9:
+                    self.player_sus[i] += 0.05
+            
         
 
     def betray(self, mission, proposer):
@@ -124,6 +150,8 @@ class BeliefBot(Agent):
         a spy will betray according to its failrate
         '''
         if self.spy:
+            if self.failures == 2:
+                return True
             return random.random() < self.fail_rate
 
     def mission_outcome(self, mission, proposer, betrayals, mission_success):
@@ -150,6 +178,11 @@ class BeliefBot(Agent):
             self.player_sus[mission[i]] = pAB
 
         self.update_teams(mission, mission_success)
+
+        if not mission_success:
+            if 0.6 < self.player_sus[proposer] < 0.9:
+                self.player_sus[proposer] += 0.5
+
  
 
     def round_outcome(self, rounds_complete, missions_failed):
@@ -238,7 +271,6 @@ class BeliefBot(Agent):
         p_fail = 0
         permutations = self.get_permutations(len(mission), betrayals)
 
-
         for p in permutations:
             probability = 1
             for i in range(len(p)):
@@ -279,6 +311,9 @@ class BeliefBot(Agent):
         return p_fail
 
     def is_team_bad(self, mission):
+        '''
+        checks if the team has previously failed a mission
+        '''
         if tuple(sorted(mission)) in self.bad_teams:
             return True
 
@@ -288,6 +323,9 @@ class BeliefBot(Agent):
         return False
 
     def is_team_good(self, mission):
+        '''
+        checks if the mission has only succeeded missions
+        '''
         if tuple(sorted(mission)) in self.good_teams:
             return True
 
@@ -295,6 +333,14 @@ class BeliefBot(Agent):
             if set(mission).issuperset(set(gt)):
                 return True
         return False 
+
+    def can_mission_fail(self, mission):
+        '''
+        returns True if there are enough suspected spies to fail the mission
+        '''
+        spy_count = [i for i in mission if self.player_sus[i] >= 0.75]
+        return len(spy_count) >= self.n_fails[self.M]
+
 
 
 

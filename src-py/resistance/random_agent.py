@@ -69,7 +69,7 @@ class RandomAgent(Agent):
         By default, spies will betray 30% of the time. 
         '''
         if self.is_spy():
-            return random.random()<0.3
+            return random.random()<1
 
     def mission_outcome(self, mission, proposer, betrayals, mission_success):
         '''
