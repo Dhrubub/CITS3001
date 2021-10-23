@@ -1,4 +1,3 @@
-from random_agent import RandomAgent
 from BeliefBot import BeliefBot
 
 from game import Game

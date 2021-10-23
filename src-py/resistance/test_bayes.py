@@ -26,7 +26,7 @@ def mission_fail_chance(mission, player_sus):
     return p_fail
 
 
-mission = [0,1]
+mission = [2,1]
 player_sus = [0.0, 0.5, 0.5, 0.5, 0.5]
 
 def mission_fail_given_spy( mission, player_sus, player_index):
@@ -54,12 +54,13 @@ def mission_fail_given_spy( mission, player_sus, player_index):
 
 print(mission_fail_chance(mission, player_sus))
 
-n_fails = 0
+n_fails = 1
 pB = mission_fail_chance(mission, player_sus)[n_fails]
 
 for i in range(len(mission)):
     pBA = mission_fail_given_spy(mission, player_sus, i)[n_fails]
     pA = player_sus[mission[i]]
 
+    print(pA, pB, pBA)
     print((pBA * pA) / pB)
 

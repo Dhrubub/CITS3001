@@ -1,7 +1,6 @@
 from agent import Agent
 import random
 
-from test import mission_fail_chance
 
 class BeliefBot(Agent):        
     '''A sample implementation of a random agent in the game The Resistance'''
@@ -50,6 +49,8 @@ class BeliefBot(Agent):
         expects a team_size list of distinct agents with id between 0 (inclusive) and number_of_players (exclusive)
         to be returned. 
         betrayals_required are the number of betrayals required for the mission to fail.
+
+        selects the players with the least probability of being a spy
         '''   
         spies_guess = self.get_spy_chance_order()
         return spies_guess[:team_size]
@@ -61,6 +62,8 @@ class BeliefBot(Agent):
         The agents on the mission are distinct and indexed between 0 and number_of_players.
         proposer is an int between 0 and number_of_players and is the index of the player who proposed the mission.
         The function should return True if the vote is for the mission, and False if the vote is against the mission.
+
+        checklist to go through to determine if player should vote approve or reject
         '''
 
         if len(mission) == self.n_res and not self.id in mission:
@@ -74,12 +77,8 @@ class BeliefBot(Agent):
             if n_spies < self.n_fails[self.M]:
                 return False 
 
-        if tuple(sorted(mission)) in self.bad_teams:
+        if self.is_team_bad(mission):
             return False
-
-        for bt in self.bad_teams:
-            if set(mission).issuperset(set(bt)):
-                return False
 
         spy_count = [i for i in mission if self.player_sus[i] >= 0.5]
         if len(spy_count) >= self.n_fails[self.M]:
@@ -88,7 +87,6 @@ class BeliefBot(Agent):
         if self.player_sus[proposer] >= 0.5:
             return False
 
-        
         return True
 
 
@@ -101,7 +99,18 @@ class BeliefBot(Agent):
         No return value is required or expected.
         '''
         #nothing to do here
-        pass
+        if self.is_team_bad(mission):
+            for i in votes:
+                if self.player_sus[i] < 0.9:
+                    self.player_sus[i] += 0.05
+            if self.player_sus[proposer] < 0.9:
+                self.player_sus[proposer] += 0.5
+        
+        if self.is_team_good(mission):
+            for i in range(self.N):
+                if i not in votes:
+                    if self.player_sus[i] < 0.9:
+                        self.player_sus[i] += 0.05
         
 
     def betray(self, mission, proposer):
@@ -111,6 +120,8 @@ class BeliefBot(Agent):
         proposer is an int between 0 and number_of_players and is the index of the player who proposed the mission.
         The method should return True if this agent chooses to betray the mission, and False otherwise. 
         By default, spies will betray 30% of the time. 
+
+        a spy will betray according to its failrate
         '''
         if self.spy:
             return random.random() < self.fail_rate
@@ -122,7 +133,10 @@ class BeliefBot(Agent):
         proposer is an int between 0 and number_of_players and is the index of the player who proposed the mission.
         betrayals is the number of people on the mission who betrayed the mission, 
         and mission_success is True if there were not enough betrayals to cause the mission to fail, False otherwise.
-        It iss not expected or required for this function to return anything.
+        It is not expected or required for this function to return anything.
+
+        Applies bayes' theorem to update the probability of the players in the mission being a spy
+        Updates the set of successful and unsuccessful teams
         '''
         current_sus = self.player_sus.copy()
         pB = self.mission_fail_chance(mission, current_sus, betrayals)
@@ -162,9 +176,16 @@ class BeliefBot(Agent):
         pass
 
     def get_spy_chance_order(self):
+        '''
+        takes player_sus and returns a list which orders the player id's 
+        from least probability of being spy to most probability
+        '''
         return sorted(range(len(self.player_sus)), key=lambda k: self.player_sus[k])
 
     def get_permutations(self, mission_size, betrayals):
+        '''
+        returns the different permuations of mission outcomes for a given number of fails
+        '''
         permutations = []
         for p in range(2**mission_size):
             pb = "{0:b}".format(p).zfill(mission_size)
@@ -174,6 +195,9 @@ class BeliefBot(Agent):
         return permutations
 
     def update_teams(self, mission, mission_success):
+        '''
+        stores the different combination of teams that have succeeded or failed
+        '''
         good_teams_copy = self.good_teams.copy()
         if mission_success:
             if not tuple(sorted(mission)) in self.bad_teams:
@@ -194,24 +218,23 @@ class BeliefBot(Agent):
     def update_fail_rate(self):
         '''
         update the spy fail rate variables
+        fail rate is determined by the number of fails required 
+        and the number of missions remaining minus 1
+        this is the minimum probability needed for spies to win 
+        if one mission succeeds from the current game state
         '''
-        mode = 2
 
         if self.M < 4:
-            if mode == 0:
-                self.fail_rate = 0.6
-
-            elif mode == 1:
-                self.fail_rate = (3-self.failures) / (5-self.M)
-
-            elif mode == 2:
-                self.fail_rate = (3-self.failures) / (5-self.M-1)
+            self.fail_rate = (3-self.failures) / (5-self.M-1)
         
         if self.fail_rate <= 0:
             self.fail_rate = 0.5
 
 
     def mission_fail_chance(self, mission, player_sus, betrayals):
+        '''
+        calculates the probability of a mission failing with a specific number of fails
+        '''
         p_fail = 0
         permutations = self.get_permutations(len(mission), betrayals)
 
@@ -230,6 +253,10 @@ class BeliefBot(Agent):
 
 
     def mission_fail_given_spy(self, mission, player_sus, player_index, betrayals):
+        '''
+        calculates the probability of the mission failing 
+        with a specific number of fails given player is a spy
+        '''
         p_fail = 0
         permutations = self.get_permutations(len(mission), betrayals)
 
@@ -250,6 +277,24 @@ class BeliefBot(Agent):
             p_fail += probability
         
         return p_fail
+
+    def is_team_bad(self, mission):
+        if tuple(sorted(mission)) in self.bad_teams:
+            return True
+
+        for bt in self.bad_teams:
+            if set(mission).issuperset(set(bt)):
+                return True
+        return False
+
+    def is_team_good(self, mission):
+        if tuple(sorted(mission)) in self.good_teams:
+            return True
+
+        for gt in self.good_teams:
+            if set(mission).issuperset(set(gt)):
+                return True
+        return False 
 
 
 
