@@ -49,7 +49,7 @@ class BeliefBot(Agent):
         to be returned. 
         betrayals_required are the number of betrayals required for the mission to fail.
         '''   
-        spies_guess = self.get_spies_guess()
+        spies_guess = self.get_spy_chance_order()
         return spies_guess[:team_size]
   
 
@@ -61,6 +61,25 @@ class BeliefBot(Agent):
         The function should return True if the vote is for the mission, and False if the vote is against the mission.
         '''
         return True
+        if tuple(sorted(mission)) in self.bad_teams:
+            return False
+
+        for bt in self.bad_teams:
+            if set(mission).issuperset(set(bt)):
+                return False
+
+        if len(mission) == self.n_res and not self.id in mission:
+            return False 
+        
+        if self.player_sus[proposer] >= 0.5:
+            return False
+
+        spy_count = [i for i in mission if self.player_sus[i] >= 0.5]
+        if len(spy_count) >= self.n_fails[self.M]:
+            return False
+        
+        return True
+
 
     def vote_outcome(self, mission, proposer, votes):
         '''
@@ -82,7 +101,7 @@ class BeliefBot(Agent):
         By default, spies will betray 30% of the time. 
         '''
         if self.spy:
-            return True
+            return random.random() < self.fail_rate
 
     def mission_outcome(self, mission, proposer, betrayals, mission_success):
         '''
@@ -104,26 +123,8 @@ class BeliefBot(Agent):
             pAB = (pBA * pA) / pB
             self.player_sus[mission[i]] = pAB
 
-        good_teams_copy = self.good_teams.copy()
-        if mission_success:
-            if not tuple(sorted(mission)) in self.bad_teams:
-                is_super = False
-                for bt in self.bad_teams:
-                    if set(mission).issuperset(set(bt)):
-                        is_super = True
-                if not is_super:
-                    self.good_teams.add(tuple(sorted(mission)))
-        else:
-            for gt in good_teams_copy:
-                if set(gt).issuperset(set(mission)) or set(gt) == set(mission):
-                    self.good_teams.remove(gt)
-
-            self.bad_teams.add(tuple(sorted(mission)))
-
-
-
-
-                 
+        self.update_teams(mission, mission_success)
+ 
 
     def round_outcome(self, rounds_complete, missions_failed):
         '''
@@ -148,7 +149,7 @@ class BeliefBot(Agent):
         #nothing to do here
         pass
 
-    def get_spies_guess(self):
+    def get_spy_chance_order(self):
         return sorted(range(len(self.player_sus)), key=lambda k: self.player_sus[k])
 
     def get_permutations(self, mission_size, betrayals):
@@ -159,6 +160,23 @@ class BeliefBot(Agent):
                 permutations.append(pb)
         
         return permutations
+
+    def update_teams(self, mission, mission_success):
+        good_teams_copy = self.good_teams.copy()
+        if mission_success:
+            if not tuple(sorted(mission)) in self.bad_teams:
+                is_super = False
+                for bt in self.bad_teams:
+                    if set(mission).issuperset(set(bt)):
+                        is_super = True
+                if not is_super:
+                    self.good_teams.add(tuple(sorted(mission)))
+        else:
+            for gt in good_teams_copy:
+                if set(gt).issuperset(set(mission)) or set(gt) == set(mission):
+                    self.good_teams.remove(gt)
+
+            self.bad_teams.add(tuple(sorted(mission)))
 
 
     def update_fail_rate(self):
