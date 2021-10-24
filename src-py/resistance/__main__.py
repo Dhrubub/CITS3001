@@ -1,5 +1,9 @@
 from BeliefBot import BeliefBot
 from random_agent import RandomAgent
+from BayesBot import BayesBot
+from VoteBot import VoteBot
+from SimpleSpyBot import SimpleSpyBot
+
 
 from game import Game
 
@@ -61,31 +65,29 @@ agents10 = [BeliefBot(name='s1'),
         ]
 
 all_agents = [agents5, agents6, agents7, agents8, agents9, agents10]
-avg = 0
-for i in range(5):
-        total = 0
-        for agents in all_agents:
-                b = 100
-                c = 0
-                for j in range(b):
-                        a = 0
-                        for i in range(b):
-                                game = Game(agents)
-                                game.play()
-                                if str(game)[:3] == "won":
-                                        a+=1
-                                # print(game)
-                        c += a
 
-                c = c / b
-                if b == 25:
-                        c*=4
-                        b*=4
+total = 0
+for agents in all_agents:
+        b = 100
+        c = 0
+        for j in range(b):
+                a = 0
+                for i in range(b):
+                        game = Game(agents)
+                        game.play()
+                        if str(game)[:3] == "won":
+                                a+=1
+                        # print(game)
+                c += a
 
-                total += c
-                # print(str(c) + "/" + str(b))
-        # print(total/len(all_agents))
-        avg += total/len(all_agents)
-print(avg / 5)
+        c = c / b
+        if b == 25:
+                c*=4
+                b*=4
+
+        total += c
+        print(str(c) + "/" + str(b))
+print(total/len(all_agents))
+
 
 
