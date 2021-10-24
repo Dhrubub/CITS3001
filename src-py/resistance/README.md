@@ -1,4 +1,4 @@
-##BeliefBot - the main agent to be used
+## BeliefBot - the main agent to be used
 
 The different agents in the folder:
 BeliefBot - applies Bayes and voting conditions and reward/penalty system
