@@ -3,33 +3,33 @@ from random_agent import RandomAgent
 
 from game import Game
 
-agents5 = [RandomAgent(name='s1'), 
-        RandomAgent(name='s2'),
+agents5 = [BeliefBot(name='s1'), 
+        BeliefBot(name='s2'),
         BeliefBot(name='r1'),  
         BeliefBot(name='r2'),  
         BeliefBot(name='r3'),
         ]
 
-agents6 = [RandomAgent(name='s1'), 
-        RandomAgent(name='s2'),
+agents6 = [BeliefBot(name='s1'), 
+        BeliefBot(name='s2'),
         BeliefBot(name='r1'),  
         BeliefBot(name='r2'),  
         BeliefBot(name='r3'),
         BeliefBot(name='r4'),
         ]
 
-agents7 = [RandomAgent(name='s1'), 
-        RandomAgent(name='s2'),
-        RandomAgent(name='s3'),  
+agents7 = [BeliefBot(name='s1'), 
+        BeliefBot(name='s2'),
+        BeliefBot(name='s3'),  
         BeliefBot(name='r1'),  
         BeliefBot(name='r2'),  
         BeliefBot(name='r3'),
         BeliefBot(name='r4'),   
         ]
 
-agents8 = [RandomAgent(name='s1'), 
-        RandomAgent(name='s2'),
-        RandomAgent(name='s3'),  
+agents8 = [BeliefBot(name='s1'), 
+        BeliefBot(name='s2'),
+        BeliefBot(name='s3'),  
         BeliefBot(name='r1'),  
         BeliefBot(name='r2'),  
         BeliefBot(name='r3'),
@@ -37,9 +37,9 @@ agents8 = [RandomAgent(name='s1'),
         BeliefBot(name='r5'),  
         ]
 
-agents9 = [RandomAgent(name='s1'), 
-        RandomAgent(name='s2'),
-        RandomAgent(name='s3'),  
+agents9 = [BeliefBot(name='s1'), 
+        BeliefBot(name='s2'),
+        BeliefBot(name='s3'),  
         BeliefBot(name='r1'),  
         BeliefBot(name='r2'),  
         BeliefBot(name='r3'),
@@ -48,10 +48,10 @@ agents9 = [RandomAgent(name='s1'),
         BeliefBot(name='r6'), 
         ]
 
-agents10 = [RandomAgent(name='s1'), 
-        RandomAgent(name='s2'),
-        RandomAgent(name='s3'),  
-        RandomAgent(name='s4'),  
+agents10 = [BeliefBot(name='s1'), 
+        BeliefBot(name='s2'),
+        BeliefBot(name='s3'),  
+        BeliefBot(name='s4'),  
         BeliefBot(name='r1'),  
         BeliefBot(name='r2'),  
         BeliefBot(name='r3'),
@@ -61,23 +61,31 @@ agents10 = [RandomAgent(name='s1'),
         ]
 
 all_agents = [agents5, agents6, agents7, agents8, agents9, agents10]
-for agents in all_agents:
-        b = 25
-        c = 0
-        for j in range(b):
-                a = 0
-                for i in range(b):
-                        game = Game(agents)
-                        game.play()
-                        if str(game)[:3] == "won":
-                                a+=1
-                        # print(game)
-                c += a
+avg = 0
+for i in range(5):
+        total = 0
+        for agents in all_agents:
+                b = 100
+                c = 0
+                for j in range(b):
+                        a = 0
+                        for i in range(b):
+                                game = Game(agents)
+                                game.play()
+                                if str(game)[:3] == "won":
+                                        a+=1
+                                # print(game)
+                        c += a
 
-        c = c / b
-        if b == 25:
-                c*=4
-                b*=4
-        print(str(c) + "/" + str(b))
+                c = c / b
+                if b == 25:
+                        c*=4
+                        b*=4
+
+                total += c
+                # print(str(c) + "/" + str(b))
+        # print(total/len(all_agents))
+        avg += total/len(all_agents)
+print(avg / 5)
 
 

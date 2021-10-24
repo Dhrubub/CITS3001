@@ -3,9 +3,7 @@ import random
 
 
 class BeliefBot(Agent):        
-    '''A sample implementation of a random agent in the game The Resistance'''
-
-    def __init__(self, name='Rando'):
+    def __init__(self, name='BeliefBot'):
         '''
         Initialises the agent.
         Nothing to do here.
@@ -38,10 +36,16 @@ class BeliefBot(Agent):
 
         self.spy = self.id in self.spies
 
-        self.update_fail_rate()
 
         self.good_teams = set()
         self.bad_teams = set()
+
+        self.PEN_THRESH = 0.9
+        self.PENALTY = 0.05
+        self.REWARD = -0.03
+        self.SPY_THRESH = 0.7
+
+        self.update_fail_rate()
 
 
     def propose_mission(self, team_size, betrayals_required = 1):
@@ -68,11 +72,10 @@ class BeliefBot(Agent):
                 counter += 1
 
         for i in spies_guess:
-            if not i in team:
-                team.append(i)
             if len(team) == team_size:
                 break
-
+            if not i in team:
+                team.append(i)
 
         return team
   
@@ -104,7 +107,7 @@ class BeliefBot(Agent):
         if self.can_mission_fail(mission):
             return False
 
-        if self.player_sus[proposer] >= 0.7:
+        if self.player_sus[proposer] >= self.SPY_THRESH:
             return False
 
         return True
@@ -119,23 +122,35 @@ class BeliefBot(Agent):
         No return value is required or expected.
         '''
         if self.is_team_bad(mission):
-            for i in votes:
-                if self.player_sus[i] < 0.9:
-                    self.player_sus[i] += 0.05
-            if self.player_sus[proposer] < 0.9:
-                self.player_sus[proposer] += 0.5
+            for i in range(self.N):
+                if i in votes:
+                    if self.player_sus[i] < self.PEN_THRESH:
+                        self.player_sus[i] += self.PENALTY
+                else:
+                    if self.player_sus[i] > 1 - self.PEN_THRESH:
+                        self.player_sus[i] += self.REWARD
+                    
+            if self.player_sus[proposer] < self.PEN_THRESH:
+                    self.player_sus[proposer] += self.PENALTY
         
         if self.is_team_good(mission):
             for i in range(self.N):
                 if i not in votes:
-                    if self.player_sus[i] < 0.9:
-                        self.player_sus[i] += 0.05
+                    if self.player_sus[i] < self.PEN_THRESH:
+                        self.player_sus[i] += self.PENALTY
+                else:
+                    if self.player_sus[i] > 1 - self.PEN_THRESH:
+                        self.player_sus[i] += self.REWARD
 
 
         if self.can_mission_fail(mission):
-            for i in votes:
-                if self.player_sus[i] < 0.9:
-                    self.player_sus[i] += 0.05
+            for i in range(self.N):
+                if i in votes:
+                    if self.player_sus[i] < self.PEN_THRESH:
+                        self.player_sus[i] += self.PENALTY
+                else:
+                    if self.player_sus[i] > 1 - self.PEN_THRESH:
+                        self.player_sus[i] += self.REWARD
             
         
 
@@ -180,8 +195,11 @@ class BeliefBot(Agent):
         self.update_teams(mission, mission_success)
 
         if not mission_success:
-            if 0.6 < self.player_sus[proposer] < 0.9:
+            if self.SPY_THRESH < self.player_sus[proposer] < self.PEN_THRESH:
                 self.player_sus[proposer] += 0.5
+        else:
+            if self.player_sus[proposer] > 1 - self.PEN_THRESH:
+                self.player_sus[proposer] += self.REWARD
 
  
 
@@ -338,7 +356,7 @@ class BeliefBot(Agent):
         '''
         returns True if there are enough suspected spies to fail the mission
         '''
-        spy_count = [i for i in mission if self.player_sus[i] >= 0.75]
+        spy_count = [i for i in mission if self.player_sus[i] >= self.SPY_THRESH]
         return len(spy_count) >= self.n_fails[self.M]
 
 
